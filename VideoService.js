@@ -11,7 +11,7 @@ const Port = process.env.PORT || 5000;
 
 var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-var Uploading = FileID => new Promise((resolve, reject) => {
+var Upload = FileID => new Promise((resolve, reject) => {
     var Form = new FormData();
     Form.append('file', FS.createReadStream(`./downloads/${FileID}.mp4`));
 
@@ -73,12 +73,10 @@ server.post('/', function(Request, Response) {
         .on("close", async () => {
             // send to server
             try{
-                let result = await Uploading(FileID);
+                let result = await Upload(FileID);
                 FS.unlink(`./downloads/${FileID}.mp4`, (err) => { 
                     if (err)    console.log(err);
                 })
-                console.log(result.hash);
-                console.log(result.url);
 
                 //wait for finish
                 let status;
