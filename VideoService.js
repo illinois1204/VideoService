@@ -7,7 +7,7 @@ const Express = require('express');
 const server = Express();
 server.use(Express.urlencoded({extended: false}));
 const Port = process.env.PORT || 5000;
-
+const delay = 1000;
 
 var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -81,7 +81,7 @@ server.post('/', function(Request, Response) {
                 //wait for finish
                 let status;
                 do {
-                    await sleep(1000);
+                    await sleep(delay);
                     status = await CheckStatus(result.hash);
                 } while(status != 'finished')
 
@@ -100,12 +100,11 @@ server.post('/', function(Request, Response) {
     }
     else if(Data.URL.toLowerCase().includes('youtu.be'))
     {
-        // let T1 = Number(Data.Time1.split(':')[0]) * 3600 + Number(Data.Time1.split(':')[1]) * 60 + Number(Data.Time1.split(':')[2]);
-        // let T2 = Number(Data.Time2.split(':')[0]) * 3600 + Number(Data.Time2.split(':')[1]) * 60 + Number(Data.Time2.split(':')[2]);
-        // let Duration = T2 - T1;
-        // FileID = '';// ??
+        let T1 = Number(Data.Time1.split(':')[0]) * 3600 + Number(Data.Time1.split(':')[1]) * 60 + Number(Data.Time1.split(':')[2]);
+        let T2 = Number(Data.Time2.split(':')[0]) * 3600 + Number(Data.Time2.split(':')[1]) * 60 + Number(Data.Time2.split(':')[2]);
+        let Duration = T2 - T1;
+        FileID = 'input';// ??
         // FileMP4 = FS.createWriteStream(`./downloads/${FileID}.mp4`);
-        
         // HTTPS.get(`https://y.yarn.co/${FileID}.mp4`, function(file) {
         //     file.pipe(FileMP4);
         // })
@@ -114,18 +113,44 @@ server.post('/', function(Request, Response) {
         // })
         // .on("close", () => {
 
-        //     FFMPEG(`./downloads/${FileID}.mp4`)
-        //     .setStartTime(Data.Time1)
-        //     .setDuration(Duration)
-        //     .output(`./downloads/${FileID}_cropped.mp4`)
-        //     .on("error", err => {
-        //         console.log(err);
-        //         Response.send("Не удалось обработать видео");
-        //     })
-        //     .on("end", async () => {
-        //         // send to server
-        //         Response.send("Видео обработано");
-        //     }).run();
+            FFMPEG(`./downloads/${FileID}.mp4`)
+            .setStartTime(Data.Time1)
+            .setDuration(Duration)
+            .output(`./downloads/${FileID}_cropped.mp4`)
+            .on("error", err => {
+                console.log(err);
+                Response.send("Не удалось обработать видео");
+            })
+            .on("end", async () => {
+                // send to server
+                try{
+                    let result = await Upload(FileID+'_cropped');
+                    // FS.unlink(`./downloads/${FileID}.mp4`, (err) => { 
+                    //     if (err)    console.log(err);
+                    // })
+                    FS.unlink(`./downloads/${FileID}_cropped.mp4`, (err) => { 
+                        if (err)    console.log(err);
+                    })
+
+                    // wait for finish
+                    let status;
+                    do {
+                        await sleep(delay);
+                        status = await CheckStatus(result.hash);
+                    } while(status != 'finished')
+
+                    Response.json({
+                        info: 'Uploaded!',
+                        hash: result.hash,
+                        status: status,
+                        url: result.url
+                    })
+                }
+                catch(ex){
+                    console.log(ex);
+                    Response.send("something went wrong");
+                }
+            }).run();
 
         // })
     }
