@@ -13,7 +13,7 @@ var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 var Upload = FileID => new Promise((resolve, reject) => {
     var Form = new FormData();
-    Form.append('file', FS.createReadStream(`./downloads/${FileID}.mp4`));
+    Form.append('file', FS.createReadStream(`./downloads/${FileID}`));
 
     var option = {
         hostname: 'storage.ru-srv1.ipst.englishpatient.org',
@@ -59,12 +59,12 @@ var CheckStatus = hash => new Promise((resolve, reject) => {
 server.post('/', function(Request, Response) {
     var Data = Request.body, FileID, FileMP4;
 
-    if(Data.URL.toLowerCase().includes('yarn.co') || Data.URL.toLowerCase().includes('getyarn.io'))
+    if(Data.URL.toLowerCase().includes('y.yarn.co'))
     {
         FileID = Data.URL.split('/').pop();
-        FileMP4 = FS.createWriteStream(`./downloads/${FileID}.mp4`);
+        FileMP4 = FS.createWriteStream(`./downloads/${FileID}`);
         
-        HTTPS.get(`https://y.yarn.co/${FileID}.mp4`, function(file) {
+        HTTPS.get(Data.URL, function(file) {
             file.pipe(FileMP4);
         })
         .on("error", () => {
@@ -74,7 +74,7 @@ server.post('/', function(Request, Response) {
             // send to server
             try{
                 let result = await Upload(FileID);
-                FS.unlink(`./downloads/${FileID}.mp4`, (err) => { 
+                FS.unlink(`./downloads/${FileID}`, (err) => { 
                     if (err)    console.log(err);
                 })
 
