@@ -160,7 +160,7 @@ server.post('/', function(Request, Response) {
 })
 
 server.listen(Port, ()=>{
-    var dir = './downloads1';
+    var dir = './downloads';
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
 });
