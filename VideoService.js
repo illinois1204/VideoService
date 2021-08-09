@@ -9,7 +9,7 @@ const server = Express();
 server.use(cors());
 server.use(Express.json());
 const Port = process.env.PORT || 5000;
-const delay = 1000;
+const delay = 500;
 
 
 var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -27,7 +27,7 @@ var Upload = FileID => new Promise((resolve, reject) => {
 
     var req = HTTPS.request(option, res => {
         if (res.statusCode !== 200)
-            reject("something went wrong");
+            reject("Something went wrong. Server response: " + res.statusCode);
 
         let body = '';
         res.on('data', chunk => { 
@@ -70,8 +70,8 @@ server.post('/', function(Request, Response) {
         HTTPS.get(Data.URL, function(file) {
             file.pipe(FileMP4);
         })
-        .on("error", () => {
-            Response.send("Не удалось скачать видео");
+            .on("error", () => {
+                Response.json({ message: "Couldn't download the video" });
         })
         .on("close", async () => {
             // send to server
@@ -97,7 +97,7 @@ server.post('/', function(Request, Response) {
             }
             catch(ex){
                 console.log(ex);
-                Response.send("something went wrong");
+                Response.json({ message: ex });
             }
         })
     }
@@ -159,7 +159,7 @@ server.post('/', function(Request, Response) {
 
         // })
     // }
-    else Response.send("Не удалось обработать ссылку");
+    else Response.json({ message: "Couldn't process the url" });
 })
 
 server.listen(Port, ()=>{
