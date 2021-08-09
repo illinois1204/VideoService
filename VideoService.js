@@ -6,11 +6,10 @@ FFMPEG.setFfmpegPath(require('@ffmpeg-installer/ffmpeg').path);
 const Express = require('express');
 var cors = require('cors')
 const server = Express();
-server.use(cors());
 server.use(Express.urlencoded({extended: false}));
 const Port = process.env.PORT || 5000;
 const delay = 1000;
-
+server.use(cors());
 var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 var Upload = FileID => new Promise((resolve, reject) => {
