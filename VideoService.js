@@ -4,7 +4,7 @@ const FormData = require('form-data');
 const FFMPEG = require('fluent-ffmpeg');
 FFMPEG.setFfmpegPath(require('@ffmpeg-installer/ffmpeg').path);
 const Express = require('express');
-var cors = require('cors')
+const cors = require('cors')
 const server = Express();
 server.use(Express.urlencoded({extended: false}));
 const Port = process.env.PORT || 5000;
