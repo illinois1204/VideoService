@@ -98,8 +98,8 @@ server.post('/', function(Request, Response) {
             }
         })
     }
-    else if(Data.URL.toLowerCase().includes('youtu.be'))
-    {
+    // else if(Data.URL.toLowerCase().includes('youtu.be'))
+    // {
         // let T1 = Number(Data.Time1.split(':')[0]) * 3600 + Number(Data.Time1.split(':')[1]) * 60 + Number(Data.Time1.split(':')[2]);
         // let T2 = Number(Data.Time2.split(':')[0]) * 3600 + Number(Data.Time2.split(':')[1]) * 60 + Number(Data.Time2.split(':')[2]);
         // let Duration = T2 - T1;
@@ -155,7 +155,7 @@ server.post('/', function(Request, Response) {
 /****************************************************************** */
 
         // })
-    }
+    // }
     else Response.send("Не удалось обработать ссылку");
 })
 
