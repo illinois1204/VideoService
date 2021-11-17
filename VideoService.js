@@ -5,7 +5,7 @@ const ytdl = require('ytdl-core');
 const FFMPEG = require('fluent-ffmpeg');
 FFMPEG.setFfmpegPath(require('@ffmpeg-installer/ffmpeg').path);
 const Express = require('express');
-const cors = require('cors')
+const cors = require('cors');
 const server = Express();
 server.use(cors());
 server.use(Express.json());
@@ -15,18 +15,18 @@ const delay = 500;
 
 var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-var Upload = FileID => new Promise((resolve, reject) => {
+var Upload = VideoID => new Promise((resolve, reject) => {
     var Form = new FormData();
-    Form.append('file', FS.createReadStream(`./downloads/${FileID}`));
+    Form.append('file', FS.createReadStream(`./downloads/${VideoID}`));
 
     var option = {
-        hostname: 'storage.ru-srv1.ipst.englishpatient.org',
+        hostname: 'api.ipst-dev.com',
         path: '/video/upload-and-transcode',
         method: 'POST',
         headers: Form.getHeaders()
     }
 
-    var req = HTTPS.request(option, res => {
+    var uploadrequest = HTTPS.request(option, res => {
         if (res.statusCode !== 200)
             reject("Something went wrong. Server response: " + res.statusCode);
 
@@ -40,14 +40,14 @@ var Upload = FileID => new Promise((resolve, reject) => {
         })
     })
 
-    req.on('error', err => {
+    uploadrequest.on('error', err => {
         reject(err);
     })
-    Form.pipe(req);
+    Form.pipe(uploadrequest);
 })
 
 var CheckStatus = hash => new Promise((resolve, reject) => {
-    HTTPS.get(`https://storage.ru-srv1.ipst.englishpatient.org/video/${hash}/status`, res => {
+    HTTPS.get(`https://api.ipst-dev.com/video/${hash}/status`, res => {
         let body = '';
         res.on('data', chunk => { 
             body += chunk;
@@ -63,26 +63,20 @@ var CheckStatus = hash => new Promise((resolve, reject) => {
 server.get('/', (Request, Response) => Response.send('App is working'))
 
 server.post('/yarncore', function(Request, Response) {
-    var Data = Request.body, FileID, FileMP4;
+    let Data = Request.body, videoid;
     if(Data.URL.toLowerCase().includes('y.yarn.co'))
     {
-        FileID = Data.URL.split('/').pop();
-        FileMP4 = FS.createWriteStream(`./downloads/${FileID}`);
-        
+        videoid = Data.URL.split('/').pop();
         HTTPS.get(Data.URL, function(file) {
-            file.pipe(FileMP4);
+            file.pipe(FS.createWriteStream(`./downloads/${videoid}`));
         })
         .on("error", () => {
-            Response.json({ message: "Couldn't download the video" });
+            Response.status(404).json({ message: "Couldn't download the video" });
         })
         .on("close", async () => {
             // send to server
             try{
-                let result = await Upload(FileID);
-                FS.unlink(`./downloads/${FileID}`, (err) => { 
-                    if (err)    console.log(err);
-                })
-
+                const result = await Upload(videoid);
                 //wait for finish
                 let status;
                 do {
@@ -98,20 +92,35 @@ server.post('/yarncore', function(Request, Response) {
                 })
             }
             catch(ex){
-                console.log(ex);
-                Response.json({ message: ex });
+                // console.log(ex);
+                Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
             }
+            FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
         })
     }
-    else Response.status(400).json({ message: "Couldn't process the url" });
+    else Response.status(400).json({ message: "invalid url" });
 })
 
-server.post('/ytcore', function(Request, Response) {
-    var Data = Request.body, FileID, FileMP4;
-    if(Data.URL.toLowerCase().includes('youtube'))
-    {
+
+server.post('/ytcore', async function(Request, Response) {
+    let Data = Request.body, videoid;
+    videoid = 'testfile171121qw.mp4';
+
+    if(!ytdl.validateURL(Data.URL)){
+        Response.status(400).json({ message: "invalid url" });
+    }
+
+    //downloading
+
+    try {
+        const result = await Upload(videoid);
 
     }
+    catch(ex) {
+        // console.log(ex);
+        Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
+    }
+
 })
 
 server.listen(Port, ()=>{
