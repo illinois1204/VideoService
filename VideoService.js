@@ -13,14 +13,14 @@ const Port = process.env.PORT || 5000;
 const delay = 500;
 
 
-var sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-var Upload = VideoID => new Promise((resolve, reject) => {
+const Upload = VideoID => new Promise((resolve, reject) => {
     var Form = new FormData();
     Form.append('file', FS.createReadStream(`./downloads/${VideoID}`));
 
     var option = {
-        hostname: 'api.ipst-dev.com',
+        hostname: 'storage.patient.ipst-dev.com',
         path: '/video/upload-and-transcode',
         method: 'POST',
         headers: Form.getHeaders()
@@ -46,15 +46,16 @@ var Upload = VideoID => new Promise((resolve, reject) => {
     Form.pipe(uploadrequest);
 })
 
-var CheckStatus = hash => new Promise((resolve, reject) => {
-    HTTPS.get(`https://api.ipst-dev.com/video/${hash}/status`, res => {
+const CheckStatus = hash => new Promise((resolve, reject) => {
+    HTTPS.get(`https://storage.patient.ipst-dev.com/video/${hash}/status`, res => {
         let body = '';
         res.on('data', chunk => { 
             body += chunk;
         })
         // ответ
         res.on('end', () => {
-            resolve(JSON.parse(body).status);
+            try { resolve(JSON.parse(body).status) }
+            catch(e) { reject('no answer in body') }            
         })
     })
     .on('error', err => reject(err));
@@ -92,7 +93,7 @@ server.post('/yarncore', function(Request, Response) {
                 })
             }
             catch(ex){
-                // console.log(ex);
+                console.log(ex);
                 Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
             }
             FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
@@ -104,23 +105,33 @@ server.post('/yarncore', function(Request, Response) {
 
 server.post('/ytcore', async function(Request, Response) {
     let Data = Request.body, videoid;
-    videoid = 'testfile171121qw.mp4';
+    videoid = 'KwXKTUOydKQ.mp4';
 
-    if(!ytdl.validateURL(Data.URL)){
-        Response.status(400).json({ message: "invalid url" });
-    }
+    // if(!ytdl.validateURL(Data.URL)){
+    //     Response.status(400).json({ message: "invalid url" });
+    // }
 
     //downloading
 
     try {
         const result = await Upload(videoid);
+        let status;
+        do {
+            await sleep(delay);
+            status = await CheckStatus(result.hash);
+        } while(status != 'finished')
 
+        Response.json({
+            info: 'Uploaded!',
+            hash: result.hash,
+            status: status,
+            url: result.url
+        })
     }
     catch(ex) {
         // console.log(ex);
         Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
     }
-
 })
 
 server.listen(Port, ()=>{

@@ -1,6 +1,5 @@
 const FS = require('fs');
 const ytdl = require('ytdl-core');
-const HTTPS = require('https');
 
 async function videoformat(ytburl){
     const _videoid = ytdl.getURLVideoID(ytburl);
@@ -28,7 +27,7 @@ async function main(){
     
     const video = await videoformat(url1);
     console.log(video);
-    ytdl(url1, { quality: video.format }).pipe(FS.createWriteStream(video.videoid+'.mp4'));
+    ytdl(url1, { quality: 18 }).pipe(FS.createWriteStream(video.videoid+'.'+video.container));
     
     //with 360p
     // ytdl('https://www.youtube.com/watch?v=rq8Aeq2RIf4', { quality: 18 }).pipe(fs.createWriteStream('video.mp4'));
