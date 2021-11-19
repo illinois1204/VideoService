@@ -11,6 +11,7 @@ server.use(cors());
 server.use(Express.json());
 const Port = process.env.PORT || 5000;
 const delay = 500;
+const serverEP = 'storage.patient.ipst-dev.com';
 
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -20,7 +21,7 @@ const Upload = VideoID => new Promise((resolve, reject) => {
     Form.append('file', FS.createReadStream(`./downloads/${VideoID}`));
 
     var option = {
-        hostname: 'storage.patient.ipst-dev.com',
+        hostname: serverEP,
         path: '/video/upload-and-transcode',
         method: 'POST',
         headers: Form.getHeaders()
@@ -47,7 +48,7 @@ const Upload = VideoID => new Promise((resolve, reject) => {
 })
 
 const CheckStatus = hash => new Promise((resolve, reject) => {
-    HTTPS.get(`https://storage.patient.ipst-dev.com/video/${hash}/status`, res => {
+    HTTPS.get(`https://${serverEP}/video/${hash}/status`, res => {
         let body = '';
         res.on('data', chunk => { 
             body += chunk;
@@ -60,6 +61,7 @@ const CheckStatus = hash => new Promise((resolve, reject) => {
     })
     .on('error', err => reject(err));
 })
+
 
 server.get('/', (Request, Response) => Response.send('App is working'))
 
@@ -84,6 +86,7 @@ server.post('/yarncore', function(Request, Response) {
                     await sleep(delay);
                     status = await CheckStatus(result.hash);
                 } while(status != 'finished')
+                FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
 
                 Response.json({
                     info: 'Uploaded!',
@@ -93,19 +96,18 @@ server.post('/yarncore', function(Request, Response) {
                 })
             }
             catch(ex){
+                FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
                 console.log(ex);
                 Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
             }
-            FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
         })
     }
     else Response.status(400).json({ message: "invalid url" });
 })
 
-
 server.post('/ytcore', async function(Request, Response) {
     let Data = Request.body, videoid;
-    videoid = 'KwXKTUOydKQ.mp4';
+    videoid = 'KwXKTUOydKQ11.mp4';
 
     // if(!ytdl.validateURL(Data.URL)){
     //     Response.status(400).json({ message: "invalid url" });
@@ -120,6 +122,7 @@ server.post('/ytcore', async function(Request, Response) {
             await sleep(delay);
             status = await CheckStatus(result.hash);
         } while(status != 'finished')
+        // FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
 
         Response.json({
             info: 'Uploaded!',
@@ -129,12 +132,13 @@ server.post('/ytcore', async function(Request, Response) {
         })
     }
     catch(ex) {
+        // FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
         // console.log(ex);
         Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
     }
 })
 
-server.listen(Port, ()=>{
+server.listen(Port, () => {
     var dir = './downloads';
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
