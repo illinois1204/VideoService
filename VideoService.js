@@ -106,23 +106,24 @@ server.post('/yarncore', function(Request, Response) {
 })
 
 server.post('/ytcore', async function(Request, Response) {
-    let Data = Request.body, videoid;
-    videoid = 'KwXKTUOydKQ11.mp4';
+    let Data = Request.body, output;
 
-    // if(!ytdl.validateURL(Data.URL)){
-    //     Response.status(400).json({ message: "invalid url" });
-    // }
+    if(!ytdl.validateURL(Data.URL)){
+        Response.status(400).json({ message: "invalid url" });
+    }
+
+    output = 'KwXKTUOydKQ11.mp4';
 
     //downloading
 
     try {
-        const result = await Upload(videoid);
+        const result = await Upload(output);
         let status;
         do {
             await sleep(delay);
             status = await CheckStatus(result.hash);
         } while(status != 'finished')
-        // FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
+        FS.unlink(`./downloads/${output}`, (err) => { if (err) console.log(err) });
 
         Response.json({
             info: 'Uploaded!',
@@ -132,8 +133,8 @@ server.post('/ytcore', async function(Request, Response) {
         })
     }
     catch(ex) {
-        // FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
-        // console.log(ex);
+        FS.unlink(`./downloads/${output}`, (err) => { if (err) console.log(err) });
+        console.log(ex);
         Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
     }
 })
@@ -143,6 +144,7 @@ server.listen(Port, () => {
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
 });
+
 
 // else if(Data.URL.toLowerCase().includes('youtu.be'))
 // {
