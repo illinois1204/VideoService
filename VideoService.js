@@ -18,7 +18,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const Upload = VideoID => new Promise((resolve, reject) => {
     var Form = new FormData();
-    Form.append('file', FS.createReadStream(`./downloads/${VideoID}`));
+    Form.append('file', FS.createReadStream(`./caches/${VideoID}`));
 
     var option = {
         hostname: serverEP,
@@ -71,7 +71,7 @@ server.post('/yarncore', function(Request, Response) {
     {
         videoid = Data.URL.split('/').pop();
         HTTPS.get(Data.URL, function(file) {
-            file.pipe(FS.createWriteStream(`./downloads/${videoid}`));
+            file.pipe(FS.createWriteStream(`./caches/${videoid}`));
         })
         .on("error", () => {
             Response.status(404).json({ message: "Couldn't download the video" });
@@ -86,7 +86,7 @@ server.post('/yarncore', function(Request, Response) {
                     await sleep(delay);
                     status = await CheckStatus(result.hash);
                 } while(status != 'finished')
-                FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
+                FS.unlink(`./caches/${videoid}`, (err) => { if (err) console.log(err) });
 
                 Response.json({
                     info: 'Uploaded!',
@@ -96,7 +96,7 @@ server.post('/yarncore', function(Request, Response) {
                 })
             }
             catch(ex){
-                FS.unlink(`./downloads/${videoid}`, (err) => { if (err) console.log(err) });
+                FS.unlink(`./caches/${videoid}`, (err) => { if (err) console.log(err) });
                 console.log(ex);
                 Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
             }
@@ -123,7 +123,7 @@ server.post('/ytcore', async function(Request, Response) {
             await sleep(delay);
             status = await CheckStatus(result.hash);
         } while(status != 'finished')
-        FS.unlink(`./downloads/${output}`, (err) => { if (err) console.log(err) });
+        FS.unlink(`./caches/${output}`, (err) => { if (err) console.log(err) });
 
         Response.json({
             info: 'Uploaded!',
@@ -133,14 +133,14 @@ server.post('/ytcore', async function(Request, Response) {
         })
     }
     catch(ex) {
-        FS.unlink(`./downloads/${output}`, (err) => { if (err) console.log(err) });
+        FS.unlink(`./caches/${output}`, (err) => { if (err) console.log(err) });
         console.log(ex);
         Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
     }
 })
 
 server.listen(Port, () => {
-    var dir = './downloads';
+    var dir = './caches';
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
 });
@@ -152,7 +152,7 @@ server.listen(Port, () => {
     // let T2 = Number(Data.Time2.split(':')[0]) * 3600 + Number(Data.Time2.split(':')[1]) * 60 + Number(Data.Time2.split(':')[2]);
     // let Duration = T2 - T1;
     // FileID = 'input';// ??
-    // FileMP4 = FS.createWriteStream(`./downloads/${FileID}.mp4`);
+    // FileMP4 = FS.createWriteStream(`./caches/${FileID}.mp4`);
     // HTTPS.get(`https://y.yarn.co/${FileID}.mp4`, function(file) {
     //     file.pipe(FileMP4);
     // })
@@ -162,10 +162,10 @@ server.listen(Port, () => {
     // .on("close", () => {
 
 /****************************************************************** */
-        // FFMPEG(`./downloads/${FileID}.mp4`)
+        // FFMPEG(`./caches/${FileID}.mp4`)
         // .setStartTime(Data.Time1)
         // .setDuration(Duration)
-        // .output(`./downloads/${FileID}_cropped.mp4`)
+        // .output(`./caches/${FileID}_cropped.mp4`)
         // .on("error", err => {
         //     console.log(err);
         //     Response.send("Не удалось обработать видео");
@@ -174,10 +174,10 @@ server.listen(Port, () => {
         //     // send to server
         //     try{
         //         let result = await Upload(FileID+'_cropped');
-        //         // FS.unlink(`./downloads/${FileID}.mp4`, (err) => { 
+        //         // FS.unlink(`./caches/${FileID}.mp4`, (err) => { 
         //         //     if (err)    console.log(err);
         //         // })
-        //         FS.unlink(`./downloads/${FileID}_cropped.mp4`, (err) => { 
+        //         FS.unlink(`./caches/${FileID}_cropped.mp4`, (err) => { 
         //             if (err)    console.log(err);
         //         })
 

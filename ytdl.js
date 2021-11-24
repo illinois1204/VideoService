@@ -31,7 +31,7 @@ async function main() {
     const video = await videoformat(url);
     console.log('start');
     // yt-dlp.exe -f 22 -P ./downloads -o vd75843.mp4 https://www.youtube.com/watch?v=OP0WLhinJiw
-    const result = spawnSync("yt-dlp.exe", [`-f ${video.format}`, "-P ./downloads", `-o ${video.output}`, url]);
+    const result = spawnSync("yt-dlp.exe", [`-f ${video.format}`, "-P ./caches", `-o ${video.output}`, url]);
     if(result.error) {
         console.log(result.error?.message);
         return;
