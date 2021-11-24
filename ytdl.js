@@ -1,7 +1,7 @@
 const HTTPS = require('https');
 const FS = require('fs');
 const ytdl = require('ytdl-core');
-const { spawn  } = require('child_process');
+const { spawnSync } = require('child_process');
 
 async function videoformat(ytburl) {
     const _videoid = ytdl.getURLVideoID(ytburl);
@@ -31,16 +31,12 @@ async function main() {
     const video = await videoformat(url);
     console.log('start');
     // yt-dlp.exe -f 22 -P ./downloads -o vd75843.mp4 https://www.youtube.com/watch?v=OP0WLhinJiw
-    spawn("yt-dlp.exe", [`-f ${video.format}`, "-P ./downloads", `-o ${video.output}`, url])
-    .on('error', error => {
-        console.log(error.message);
+    const result = spawnSync("yt-dlp.exe", [`-f ${video.format}`, "-P ./downloads", `-o ${video.output}`, url]);
+    if(result.error) {
+        console.log(result.error?.message);
         return;
-    })
-    .on('close', () => {
-        console.log("done!");
-    })
-    //or
-    // ytdl(url1, { quality: 18 }).pipe(FS.createWriteStream("./downloads/"+video.videoid + '.' + video.container)).on('close', () => console.log('done'));
+    }
+    console.log("done");
 }
 
 main();
