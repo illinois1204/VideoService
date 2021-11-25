@@ -7,13 +7,13 @@ const FFMPEG = require('fluent-ffmpeg');
 FFMPEG.setFfmpegPath(require('@ffmpeg-installer/ffmpeg').path);
 const Express = require('express');
 const cors = require('cors');
+const { info } = require('console');
 const server = Express();
 server.use(cors());
 server.use(Express.json());
-
 const Port = process.env.PORT || 5000;
 const delay = 500;
-const serverEP = 'storage.patient.ipst-dev.com';
+const serverEP = process.env.serverEP;
 
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -64,9 +64,8 @@ const CheckStatus = hash => new Promise((resolve, reject) => {
     .on('error', err => reject(err));
 })
 
-async function videoformat(ytburl) {
-    const _videoid = ytdl.getURLVideoID(ytburl);
-    const info = await ytdl.getInfo(ytburl);
+async function GetVideoFormat(info, YTurl) {
+    const _videoid = ytdl.getURLVideoID(YTurl);
     try{
         const videoinfo = ytdl.chooseFormat(info.formats, { quality: '22' }); //720p
         return { format: videoinfo.itag, output: _videoid+'.'+videoinfo.container };
@@ -127,38 +126,46 @@ server.post('/ytcore', async function(Request, Response) {
 
     if(!ytdl.validateURL(Data.URL)){
         Response.status(400).json({ message: "invalid url" });
+        return;
     }
 
-    const video = await videoformat(url);
-    const download = spawnSync("./yt-dlp", [`-f ${video.format}`, "-P ./caches", `-o ${video.output}`, Data.URL]);
+    try{
+        var info = await ytdl.getInfo(Data.URL);
+    }
+    catch(e) {
+        Response.status(400).json({ message: e.message });
+        return;
+    }
+
+    const video = await GetVideoFormat(info, Data.URL);
+    const download = spawnSync("./yt-dlp", [`-f ${video.format}`, "-P ./caches", `-o${video.output}`, Data.URL]);
     if(download.error) {
         console.log(download.error?.message);
         Response.status(400).json({ message: "Couldn't download the video" });
+        return;
     }
 
-    Response.json({ info: 'Uploaded!', filename: video.output });
+    try {
+        const result = await Upload(video.output);
+        let status;
+        do {
+            await sleep(delay);
+            status = await CheckStatus(result.hash);
+        } while(status != 'finished')
+        FS.unlink(`./caches/${video.output}`, (err) => { if (err) console.log(err) });
 
-    // try {
-    //     const result = await Upload(video.output);
-    //     let status;
-    //     do {
-    //         await sleep(delay);
-    //         status = await CheckStatus(result.hash);
-    //     } while(status != 'finished')
-    //     FS.unlink(`./caches/${video.output}`, (err) => { if (err) console.log(err) });
-
-    //     Response.json({
-    //         info: 'Uploaded!',
-    //         hash: result.hash,
-    //         status: status,
-    //         url: result.url
-    //     })
-    // }
-    // catch(ex) {
-    //     FS.unlink(`./caches/${video.output}`, (err) => { if (err) console.log(err) });
-    //     console.log(ex);
-    //     Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
-    // }
+        Response.json({
+            info: 'Uploaded!',
+            hash: result.hash,
+            status: status,
+            url: result.url
+        })
+    }
+    catch(ex) {
+        FS.unlink(`./caches/${video.output}`, (err) => { if (err) console.log(err) });
+        console.log(ex);
+        Response.status(500).json({ message: ex?.reason ?? 'Request reject' });
+    }
 })
 
 server.listen(Port, () => {
