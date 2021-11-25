@@ -11,6 +11,8 @@ const cors = require('cors');
 const server = Express();
 server.use(cors());
 server.use(Express.json());
+const Database = require('better-sqlite3');
+const DB = new Database('videos.db')
 const Port = process.env.PORT || 5000;
 const serverEP = process.env.SERVER_EP || 'storage.patient.ipst-dev.com';
 const MaxSize = process.env.MAXSIZE || 30000000; //BYTE
@@ -84,6 +86,18 @@ async function GetVideoFormat(info, YTurl) {
 
 
 server.get('/', (Request, Response) => Response.send('App is working'))
+
+server.get('/ytcore/status', function(Request, Response) {
+    const _videoid = Request.query?.videoid;
+    if (!_videoid  || _videoid == '') {
+        console.log(_videoid);
+        Response.status(404).json({ message: "No videoid parametr" });
+        return;
+    }
+    const row = DB.prepare("SELECT * FROM videos WHERE youtubeid = ?").get(_videoid);
+    console.log(row);
+    Response.json(row);
+})
 
 server.post('/yarncore', function(Request, Response) {
     let Data = Request.body, videoid;
@@ -173,6 +187,8 @@ server.post('/ytcore', async function(Request, Response) {
 })
 
 server.listen(Port, () => {
+    DB.exec("CREATE TABLE IF NOT EXISTS videos('youtubeid' VARCHAR PRIMARY KEY NOT NULL, 'hash' VARCHAR, 'status' VARCHAR, 'url' VARCHAR)");
+    console.log("DataBase connected");
     var dir = './caches';
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
