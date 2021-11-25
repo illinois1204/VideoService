@@ -7,7 +7,6 @@ const FFMPEG = require('fluent-ffmpeg');
 FFMPEG.setFfmpegPath(require('@ffmpeg-installer/ffmpeg').path);
 const Express = require('express');
 const cors = require('cors');
-const { info } = require('console');
 const server = Express();
 server.use(cors());
 server.use(Express.json());
