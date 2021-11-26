@@ -1,4 +1,6 @@
 .gitignore
+.git
+.dockerignore
 Dockerfile
 README.md
 caches
