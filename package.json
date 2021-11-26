@@ -9,11 +9,9 @@
   "author": "illinois",
   "license": "ISC",
   "dependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "better-sqlite3": "^7.4.5",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
     "sync-request": "^6.1.0",
     "ytdl-core": "^4.9.1"
