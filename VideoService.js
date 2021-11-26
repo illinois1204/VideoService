@@ -191,7 +191,7 @@ server.post('/upload-youtube', async function(Request, Response) {
     }
 
     const video = await GetVideoFormat(info, Data.URL);
-    const download = spawnSync("yt-dlp.exe", [`-f ${video.format}`, "-P ./caches", `-o${video.output}`, Data.URL]);
+    const download = spawnSync("./yt-dlp", [`-f ${video.format}`, "-P ./caches", `-o${video.output}`, Data.URL]);
     if(download.error) {
         console.log(download.error?.message);
         DB.prepare("DELETE FROM videos WHERE youtubeid = ?").run(_videoid);
