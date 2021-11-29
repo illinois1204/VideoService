@@ -1,7 +1,5 @@
 const HTTPS = require('https');
-const SyncRequest = require('sync-request');
 const FS = require('fs');
-const FormData = require('form-data');
 const ytdl = require('ytdl-core');
 const { spawnSync } = require('child_process');
 const Express = require('express');
@@ -11,76 +9,9 @@ server.use(cors());
 server.use(Express.json());
 const Database = require('better-sqlite3');
 const DB = new Database('videos.db')
+const { sleep, Upload, CheckStatus, GetVideoFormat } = require('./VideoProcessing');
 const Port = process.env.PORT || 5000;
-const serverEP = process.env.SERVER_EP || 'storage.patient.ipst-dev.com';
-const MaxSize = process.env.MAXSIZE || 30000000; //BYTE
 const delay = 1000;
-
-
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-const Upload = VideoID => new Promise((resolve, reject) => {
-    let Form = new FormData();
-    Form.append('file', FS.createReadStream(`./caches/${VideoID}`));
-
-    const option = {
-        hostname: serverEP,
-        path: '/video/upload-and-transcode',
-        method: 'POST',
-        headers: Form.getHeaders()
-    }
-
-    const uploadrequest = HTTPS.request(option, res => {
-        if (res.statusCode !== 200)
-            reject("Something went wrong. Server response: " + res.statusCode);
-
-        let body = '';
-        res.on('data', chunk => { 
-            body += chunk;
-        })
-        // ответ
-        res.on('end', () => { 
-            resolve(JSON.parse(body));
-        })
-    })
-
-    uploadrequest.on('error', err => {
-        reject(err);
-    })
-    Form.pipe(uploadrequest);
-})
-
-const CheckStatus = hash => new Promise((resolve, reject) => {
-    HTTPS.get(`https://${serverEP}/video/${hash}/status`, res => {
-        let body = '';
-        res.on('data', chunk => { 
-            body += chunk;
-        })
-        // ответ
-        res.on('end', () => {
-            try { resolve(JSON.parse(body).status) }
-            catch(e) { reject('no answer in body') }            
-        })
-    })
-    .on('error', err => reject(err));
-})
-
-async function GetVideoFormat(info, YTurl) {
-    const _videoid = ytdl.getURLVideoID(YTurl);
-    try{
-        const videoinfo = ytdl.chooseFormat(info.formats, { quality: '22' }); //720p
-        const size = SyncRequest('HEAD', videoinfo.url).headers['content-length'];
-        if(size > MaxSize)
-            throw "Too big video size";
-        return { format: videoinfo.itag, output: _videoid+'.'+videoinfo.container };
-    }
-    catch(ex) { }
-    try {
-        const videoinfo = ytdl.chooseFormat(info.formats, { quality: '18' }); //360p or possible
-        return { format: videoinfo.itag, output: _videoid+'.'+videoinfo.container };
-    }
-    catch (ex) { }
-}
 
 
 server.get('/', (Request, Response) => Response.send('App is working'))
@@ -109,7 +40,7 @@ server.get('/upload-youtube/status', function(Request, Response) {
 
 server.post('/upload-yarn', function(Request, Response) {
     let Data = Request.body, videoid;
-    if(Data.URL.toLowerCase().includes('y.yarn.co')) {
+    if(!Data.URL.toLowerCase().includes('y.yarn.co')) {
         Response.status(400).json({ message: "invalid url" });
         return;
     }
@@ -218,7 +149,7 @@ server.post('/upload-youtube', async function(Request, Response) {
 
 server.listen(Port, () => {
     DB.exec("CREATE TABLE IF NOT EXISTS videos('youtubeid' VARCHAR PRIMARY KEY NOT NULL, 'hash' VARCHAR, 'status' VARCHAR, 'url' VARCHAR)");
-    var dir = './caches';
+    const dir = './caches';
     if (!FS.existsSync(dir))    FS.mkdirSync(dir);
     console.log('Server run on port: '+Port);
 });
