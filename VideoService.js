@@ -19,7 +19,6 @@ server.get('/', (Request, Response) => Response.send('App is working'))
 server.get('/upload-youtube/status', function(Request, Response) {
     const _videoid = Request.query?.videoid;
     if (!_videoid  || _videoid == '') {
-        console.log(_videoid);
         Response.status(404).json({ message: "No videoid parametr" });
         return;
     }
@@ -90,7 +89,6 @@ server.post('/upload-youtube', async function(Request, Response) {
 
     const row = DB.prepare("SELECT * FROM videos WHERE youtubeid = ?").get(_videoid);
     if (row) {
-        console.log(row);
         Response.json({
             YouTubeVideoid: row.youtubeid,
             hash: row.hash,
